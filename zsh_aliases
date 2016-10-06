@@ -1,0 +1,316 @@
+# --------------------------------------------------------------------------------
+# LS
+# --------------------------------------------------------------------------------
+alias ls='ls -h --color=auto'
+alias ll='ls -l'
+alias la='ls -A'
+alias l='ls -CF'
+
+# --------------------------------------------------------------------------------
+# GIT
+# --------------------------------------------------------------------------------
+alias gis='git status'
+alias gib='git branch'
+alias gic='git checkout'
+alias gicb='git checkout -b'
+alias gir='git remote -v'
+alias gil='git log'
+
+# --------------------------------------------------------------------------------
+# Edit dotfiles
+# --------------------------------------------------------------------------------
+
+vs() {
+    vim $1;
+    source $1;
+}
+
+es() {
+    emacs $1;
+    source $1;
+}
+
+alias ep="vs ~/.profile"
+alias et="vim ~/.tmux.conf"
+alias ez="vs ~/.zshrc"
+alias ezp="vs ~/.zpreztorc"
+alias ea="vs ~/.zsh_aliases"
+alias ev="vim ~/.vimrc"
+alias elv="vim ~/.vimrc.local"
+alias elb="vim ~/.vimrc.local.bundles"
+alias em="vim ~/.moc/config"
+alias eh="sudo vim /etc/hosts"
+alias ef="vim ~/fixes"
+
+# --------------------------------------------------------------------------------
+# Aptitude
+# --------------------------------------------------------------------------------
+
+alias apti='sudo apt-get install'
+alias aptr='sudo apt-get remove'
+alias aptu='sudo apt-get update'
+alias aptug='sudo apt-get upgrade'
+alias ubuntu_version='lsb_release -a'
+
+# --------------------------------------------------------------------------------
+# TMUX
+# --------------------------------------------------------------------------------
+# alias tn='tmux new'
+function tn() {
+    sess=$(date +%F)
+    tmux new-session -d -s $sess
+    tmux split-window -v -l 7;
+    tmux select-pane -U;
+    tmux split-window -h;
+    tmux select-pane -L;
+    tmux -2 attach-session -d
+}
+
+# alias tns='tmux new -s'
+function tns() {
+    tmux new-session -d -s $1;
+    tmux split-window -v -l 7;
+    tmux select-pane -U;
+    tmux split-window -h;
+    tmux select-pane -L;
+    tmux -2 attach-session -d;
+}
+
+alias ta='tmux attach'
+alias tas='tmux attach -t'
+alias ts='tmux switch'
+alias tss='tmux switch -s'
+alias tl='tmux list-sessions'
+alias tw='tmux list-windows'
+alias tk='tmux kill-session -a'
+alias tkc='tmux kill-session -t "$CURRENT_SESSION_ID"'
+
+tmux_colors() {
+    for i in {0..255} ; do
+        printf "\x1b[38;5;${i}mcolour${i}\n"
+    done
+}
+
+# --------------------------------------------------------------------------------
+# Common shortcuts
+# --------------------------------------------------------------------------------
+alias r='reset'
+alias c='clear'
+alias x='exit'
+
+path() {
+    echo $PATH | tr \: \\n
+}
+
+most_used_commands() {
+    history | cut -c 8-100 | sort | uniq -c | sort -n
+}
+
+# --------------------------------------------------------------------------------
+# Common programs
+# --------------------------------------------------------------------------------
+alias v='vim'
+alias now='date +%Y%m%d_%H%M%S';
+alias c="clear"
+
+# --------------------------------------------------------------------------------
+# Directory browsing and handling
+# --------------------------------------------------------------------------------
+alias ..='cd ..'
+
+mkcd() {
+    mkdir -p $1;
+    cd $1;
+}
+
+cdl() {
+    cd "$1";
+    ls -ltra --color=always | tail -n 25;
+    echo " ";
+    pwd;
+}
+
+# --------------------------------------------------------------------------------
+# Subliminal download for all videos in the current directory
+# --------------------------------------------------------------------------------
+alias subs='subliminal download -l pt-br ./'
+
+# --------------------------------------------------------------------------------
+# List all installed packages classified by priority:
+# --------------------------------------------------------------------------------
+packages() {
+    dpkg-query -Wf '${Package;-40}${Priority}\n' | sort -b -k2,2 -k1,1
+}
+
+# --------------------------------------------------------------------------------
+# Upgrade all python pip packages
+# --------------------------------------------------------------------------------
+pip_upgrade() {
+   pip freeze --local | grep -v '^\-e' | cut -d = -f 1  | xargs -n1 sudo -H pip install -U
+}
+
+# --------------------------------------------------------------------------------
+# Projects
+# --------------------------------------------------------------------------------
+alias sites='cd /etc/nginx/sites-enabled'
+alias projects='cd ~/.tmuxp && ls'
+alias lp='load_project'
+alias sp='tmuxinator start'
+alias np='tmuxinator new'
+
+load_project(){
+    source ~/.nvm/nvm.sh
+    tmuxp load ~/.tmuxp/$1.yaml
+}
+
+ci_project() {
+    cd ~/www
+    mkdir -p $1
+    cd $1
+    git init
+    cp -a ~/www/templates/codeigniter/. ~/www/$1
+    npm install --save-dev
+}
+
+simple_project() {
+    # add entries to host
+    sudo sed -i -e "2i127.0.0.1\t$1.dev" /etc/hosts # 2i: add in the second line
+
+    sudo cp ~/www/templates/sites-nginx/simple-site-html /etc/nginx/sites-available/$1.dev
+    sudo sed -i "s/@title/$1/g" /etc/nginx/sites-available/$1.dev
+    sudo ln -s /etc/nginx/sites-available/$1.dev /etc/nginx/sites-enabled/$1.dev
+
+    # make tmuxinator project
+    # cd ~/.tmuxinator
+    # np $1
+
+    # create dir, copy site, init git and install node dependencies
+    cd ~/www
+    mkdir -p $1
+    cd $1
+    git init
+    cp -a ~/www/templates/simple-project/. ~/www/$1
+    grep -rl '@title' ~/www/$1 | xargs sed -i "s/@title/$1/g"
+    npm install --save-dev
+    git add .
+    git commit -m "Initial commit"
+
+    # restart nginx
+    sudo service nginx restart
+
+    # load page
+    xdg-open http://$1.dev/app
+
+    # start project
+    # sp $1
+    subl ~/www/$1
+}
+
+wipe_project() {
+    sudo sed -i "/$1/d" /etc/hosts
+    sudo rm -f /etc/nginx/sites-enabled/$1.dev
+    sudo rm -f /etc/nginx/sites-available/$1.dev
+    cd ~/www
+    rm -rf $1
+    # rm ~/.tmuxp/$1.yaml
+}
+
+start_gulp_project(){
+    cd www/$1 && clear
+    gulp serve
+}
+
+# --------------------------------------------------------------------------------
+# Youtube-dl
+# --------------------------------------------------------------------------------
+alias yd='noglob youtube-dl $1'
+
+
+# --------------------------------------------------------------------------------
+# Install or decompress
+# --------------------------------------------------------------------------------
+decompress() {
+    # in ZSH the "command" keyword prevents recursion
+    command sudo tar zxvf $1 -C $2
+}
+
+# --------------------------------------------------------------------------------
+# Install a .deb file with dependencies
+# --------------------------------------------------------------------------------
+install_deb() {
+    command sudo dpkg -i $1
+    command sudo apt install -f
+}
+
+# --------------------------------------------------------------------------------
+# Tmuxp
+# --------------------------------------------------------------------------------
+alias layout='tmuxp freeze -S /tmp/tmux-1000/default $1'
+
+# --------------------------------------------------------------------------------
+# Reactivate Jetbrains products
+# --------------------------------------------------------------------------------
+alias rj='python /mnt/SOFTWARE/JetBrains/JetBrains_License_Server_v1_1/linux-mac/jetbrains_license_server/manage.py runserver localhost:9123'
+
+# --------------------------------------------------------------------------------
+# Emacs
+# --------------------------------------------------------------------------------
+# alias emacs='emacs -nw'
+
+# --------------------------------------------------------------------------------
+# Translation
+# --------------------------------------------------------------------------------
+say() {
+        # limit to 100 character or less
+        # language code: http://developers.google.com/translate/v2/using_rest#language-params
+        # useage: say <language code> <phase>
+        # example: say es come with me
+	mplayer -ao alsa -user-agent Mozilla "http://translate.google.com/translate_tts?ie=UTF-8&tl="$1"&q=$(echo "$@" | cut -d ' ' -f2- | sed 's/ /\+/g')" > /dev/null 2>&1;
+}
+
+say-translation() {
+        # by: gotbletu
+        # requires: http://www.soimort.org/google-translate-cli/
+        # limit to 100 character or less
+        # language code: http://developers.google.com/translate/v2/using_rest#language-params
+        # useage: say-translation <language code> <phase>
+        # example: say-translation es come with me
+        lang=$1
+        trans=$(translate {=$lang} "$(echo "$@" | cut -d ' ' -f2- | sed 's/ /\+/g')" )
+        echo $trans
+        mplayer -user-agent Mozilla \
+        "http://translate.google.com/translate_tts?ie=UTF-8&tl=$lang&q=$trans" > /dev/null 2>&1 ;}
+
+
+# --------------------------------------------------------------------------------
+# Center window
+# --------------------------------------------------------------------------------
+
+center_window() {
+  IFS='x' read screenWidth screenHeight < <(xdpyinfo | grep dimensions | grep -o '[0-9x]*' | head -n1)
+
+  width=$(xdotool getactivewindow getwindowgeometry --shell | head -4 | tail -1 | sed 's/[^0-9]*//')
+  height=$(xdotool getactivewindow getwindowgeometry --shell | head -5 | tail -1 | sed 's/[^0-9]*//')
+
+  newPosX=$((screenWidth/2-width/2))
+  newPosY=$((screenHeight/2-height/2))
+
+  xdotool getactivewindow windowmove "$newPosX" "$newPosY"
+}
+
+
+
+# --------------------------------------------------------------------------------
+# Useful stuff to be used later
+# --------------------------------------------------------------------------------
+#
+# divide urls like example.com.br in segments divided by . and takes the first
+# FIRST_URL_SEG=$1 | cut -d'.' -f 1
+#
+# choose a random mp3
+# alias mp="rm -rf /tmp/playlist.tmp && find /mnt/MULTIMIDIA/AUDIO -name *.mp3 > /tmp/playlist.tmp && mplayer -playlist /tmp/playlist.tmp -shuffle -loop 0 | grep Playing"
+
+#for i in $1.*; do
+#    sed -i "s/@title/$1/g" $i
+#    sed -i "s/@env/$1/g" $i
+# done
